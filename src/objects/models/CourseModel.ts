@@ -1,18 +1,19 @@
 export class CourseModel {
-   name: string = '';
-   identifier: string = '';
-   session: string  = '';
+   name: string | null = null;
+   identifier: string | null = null;
+   session: string | null  = null;
    classNumber: number = 0;
-   career: string = "";
-   startDate:  number = 0;
-   endDate: number = 0;
+   career: string | null = null;
+   startDateAndTime:  number = 0;
+   endDateAndTime: number = 0;
    units: number = 0;
-   dropConsent: string = ""
-   grading: string =  ""
-   description: string = "";
-   enrollmentRequirements: string = "";
-   classAttributes: string = "";
-   courseUrl: string = "";
+   dropConsent: string | null = null
+   grading: string | null = null
+   description: string | null = null
+   enrollmentRequirements: string | null = null
+   classAttributes: string | null = null
+   courseUrl: string | null = null
+   topic: string | null = null;
 
    // class details
    instructor: string[] = [];
