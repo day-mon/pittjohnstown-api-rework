@@ -25,12 +25,21 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
     // 409 is a conflict
     if (status >= 300 && status <= 399) return res.status(409).send("Peoplesoft is down");
     // should really never been thrown? lol
-    if (status >= 400 && status <= 499) return res.status(404).send("Page does not exist");
+    if (status >= 400 && status <= 499) return res.status(404).send({
+        // kinda redundant, but whatever
+        message: `Page is not found for ${courseId} in ${termId}`,
+        termId: termId,
+        courseId: courseId
+    });
     // TODO: need to figure out what status code to use here
     if (status >= 500 && status <= 599) return res.status(409).send("PeopleSoft has returned a Internal Server Error");
-
-    let peopleSoftHtml: string = result.data as string
-    let course: CourseModel = getCourseFromHtml(peopleSoftHtml)
+    let peopleSoftHtml: string = result.data
+    let course: CourseModel | null = getCourseFromHtml(peopleSoftHtml)
+    if (null == course) return res.status(404).send({
+        message: "Course not found",
+        courseId: courseId,
+        termId: termId
+    });
     course.courseUrl = result.config.url == undefined ? "Unknown" : result.config.url
 
     return res.status(200).send(course);
@@ -39,9 +48,11 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
 
 
 
-const getCourseFromHtml = (html: string): CourseModel => {
+const getCourseFromHtml = (html: string): CourseModel | null=> {
     let course = new CourseModel();
     const document = new JSDOM(html).window.document;
+
+    if (document.getElementsByClassName('alert alert-info fade in').length > 0) return null;
 
 
     let identifierClassName = document.getElementsByClassName("page-title  with-back-btn")
@@ -56,7 +67,7 @@ const getCourseFromHtml = (html: string): CourseModel => {
 
 
 
-
+    // todo: fix attribute alignment
     for (let left = 1, right = 2; right < size; left++, right++)
     {
         if (elementsLeft[left] == undefined || elementsRights[right] == undefined) continue;
@@ -85,10 +96,8 @@ const getCourseFromHtml = (html: string): CourseModel => {
                 break;
             case "Dates":
                 let dates = parseCourseDates(textRight);
-                console.log(dates);
                 course.startDateAndTime = dates[0];
                 course.endDateAndTime = dates[1];
-                console.log(course.startDateAndTime)
                 break;
             case "Units":
                 course.units = parseInt(textRight);
@@ -115,7 +124,7 @@ const getCourseFromHtml = (html: string): CourseModel => {
                 course.meetingDays = parseDaysOfWeek(textRight);
                 let times = parseCourseTimes(textRight, course);
                 course.startDateAndTime = times[0];
-                course.startDateAndTime = times[1];
+                course.endDateAndTime = times[1];
                 break;
             case "Campus":
                 course.campus = textRight;
@@ -186,16 +195,23 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     let endTimeMilitary = convertTimeToMilitary(endTime);
 
 
+    console.log(course.startDateAndTime);
 
     // convert course date to america new york timezone
-    let xxx = new Date(course.startDateAndTime)
     let startTimeEST = dayjs(course.startDateAndTime).tz("America/New_York").format("YYYY-MM-DD");
     let endTimeEST = dayjs(course.endDateAndTime).tz("America/New_York").format("YYYY-MM-DD");
 
+    let zzz = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York");
+    console.log(zzz)
+
+
+    console.log(dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York"));
 
     // append time to course date
-    let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").unix();
-    let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").unix();
+    let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
+    let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
+
+    console.log(finalStartTimeInUnix);
 
 
 
@@ -228,7 +244,7 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
 
 const parseCourseDates = (times: string): number[] =>  times.split('-')
         .map(day =>  day.trim().trimStart())
-        .map(day => dayjs(day, 'MM/DD/YYYY', 'America/New_York').unix());
+        .map(day => dayjs(day, 'MM/DD/YYYY').tz('America/New_York').valueOf());
 
 
 
