@@ -7,7 +7,6 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 RUN npm i
-RUN npm run production
 
 COPY . .
 EXPOSE 6060
