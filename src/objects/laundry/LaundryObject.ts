@@ -20,7 +20,6 @@ export class LaundryObject {
 
     public static asLaundryObject(model: LaundryModel, location: string): LaundryObject[]
     {
-        console.log(model);
         return model.objects.map(machine => new LaundryObject(machine, location));
     }
 }

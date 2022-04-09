@@ -2,8 +2,8 @@
 import http from 'http';
 import express, { Express } from 'express';
 import morgan from 'morgan';
-import routes from './routes/laundry';
-
+import laundryRoute from './routes/laundry';
+import courseRoute from './routes/course';
 const router: Express = express();
 
 /** Logging */
@@ -28,7 +28,7 @@ router.use((req, res, next) => {
 });
 
 /** Routes */
-router.use('/', routes);
+router.use('/api/v1/', courseRoute, laundryRoute);
 
 /** Error handling */
 router.use((req, res, next) => {
