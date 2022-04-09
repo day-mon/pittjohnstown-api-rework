@@ -4,8 +4,8 @@ export class CourseModel {
    session: string | null  = null;
    classNumber: number = 0;
    career: string | null = null;
-   startDateAndTime:  number = 0;
-   endDateAndTime: number = 0;
+   startDateAndStartTime:  number = 0;
+   endDateAndEndTime: number = 0;
    units: number = 0;
    dropConsent: string | null = null
    grading: string | null = null

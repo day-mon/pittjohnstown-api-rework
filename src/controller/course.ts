@@ -67,7 +67,6 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
 
 
 
-    // todo: fix attribute alignment
     for (let left = 1, right = 2; right < size; left++, right++)
     {
         if (elementsLeft[left] == undefined || elementsRights[right] == undefined) continue;
@@ -96,8 +95,8 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
                 break;
             case "Dates":
                 let dates = parseCourseDates(textRight);
-                course.startDateAndTime = dates[0];
-                course.endDateAndTime = dates[1];
+                course.startDateAndStartTime = dates[0];
+                course.endDateAndEndTime = dates[1];
                 break;
             case "Units":
                 course.units = parseInt(textRight);
@@ -112,7 +111,7 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
                 course.status = textRight;
                 break;
             case "Instructor(s)":
-                course.instructor = textRight.split(',')
+                course.instructor = textRight.split(',').map(instructor => instructor.trim());
                 break;
             case "Description":
                 course.description = textRight;
@@ -123,8 +122,8 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
             case "Meets":
                 course.meetingDays = parseDaysOfWeek(textRight);
                 let times = parseCourseTimes(textRight, course);
-                course.startDateAndTime = times[0];
-                course.endDateAndTime = times[1];
+                course.startDateAndStartTime = times[0];
+                course.endDateAndEndTime = times[1];
                 break;
             case "Campus":
                 course.campus = textRight;
@@ -167,22 +166,36 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
     return course;
 }
 
-function convertTimeToMilitary(startTime: string) {
-    let time = startTime.split(':');
-    let hour = parseInt(time[0]);
-    let minute = parseInt(time[1]);
-    let ampm = time[2];
+// convert to military time
 
-    if (ampm == "PM") {
-        if (hour != 12) {
-            hour += 12;
-        }
-    }
-    else if (ampm == "AM" && hour == 12) {
-        hour = 0;
-    }
 
-    return hour + ":" + minute;
+/**
+ * Parses the course times from the course page.
+ * @param startTime The start time of the course in the format "hh:mm am/pm"
+ * @return The start time and end time of the course in the format "hh:mm 24 hour time" or null <strong> usually only if course is labeled TBA</strong>
+ */
+const convertTimeToMilitary = (startTime: string) =>
+{
+    if (startTime == undefined) return null;
+    if (startTime.toLowerCase() == "tba") return null;
+
+    if (startTime.includes("AM"))
+    {
+        let time = startTime.split(":");
+        let hour = parseInt(time[0]);
+        let minute = parseInt(time[1].replace("AM", ""));
+        if (hour == 12) hour = 0;
+        return `${hour}:${minute}`;
+    }
+    else if (startTime.includes("PM"))
+    {
+        let time = startTime.split(":");
+        let hour = parseInt(time[0]);
+        let minute = parseInt(time[1].replace("PM", ""));
+        if (hour != 12) hour += 12;
+        return `${hour}:${minute}`;
+    }
+    else return null;
 }
 
 const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
@@ -194,50 +207,22 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     let startTimeMilitary = convertTimeToMilitary(startTime);
     let endTimeMilitary = convertTimeToMilitary(endTime);
 
+    // time is probably tba or something of the sort
+    if (startTimeMilitary  == null || endTimeMilitary == null) { return [-1, -1]; }
 
-    console.log(course.startDateAndTime);
+
 
     // convert course date to america new york timezone
-    let startTimeEST = dayjs(course.startDateAndTime).tz("America/New_York").format("YYYY-MM-DD");
-    let endTimeEST = dayjs(course.endDateAndTime).tz("America/New_York").format("YYYY-MM-DD");
+    let startTimeEST = dayjs(course.startDateAndStartTime, 'YYYY-MM-DD', 'American/New_York').format('YYYY-MM-DD');
+    let endTimeEST = dayjs(course.endDateAndEndTime, 'YYYY-MM-DD', 'American/New_York').format('YYYY-MM-DD')
 
-    let zzz = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York");
-    console.log(zzz)
-
-
-    console.log(dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York"));
 
     // append time to course date
     let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
     let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
 
-    console.log(finalStartTimeInUnix);
-
-
 
     return [finalStartTimeInUnix, finalEndTimeInUnix];
-
-
-    //console.log(startTime, endTime)
-    //let test = dayjs(`1970-00-00 ${startTime}`, 'YYYY-MM-DD HH:mmA')
-    //let test1 = dayjs(`1970-00-00 ${endTime}`, 'YYYY-MM-DD HH:mmA')
-    //console.log(test, test1)
-
-   // let z = dayjs(dayjs().tz('America/New_York').hour(16).minute(20).unix()).format('HH:mm')
-   // let a = new Date(dayjs().tz('America/New_York').hour(8).minute(34).unix()).
-
-    //let z = dayjs().hour(2).minute(30).format('HH:mm')
-    // let a = dayjs().utc().hour(4).minute(59).format('HH:mm')
-
-    /*
-
-    const startTimeUTC = dayjs(startTime, 'h:mm A', 'America/New_York')
-    console.log(startTimeUTC + 'sd')
-    const endTimeUTC = dayjs(endTime, 'h:mm A', 'America/New_York').unix()
-    return [prettyDate2(2), prettyDate2(endTimeUTC)]
-
-     */
-
 }
 
 
