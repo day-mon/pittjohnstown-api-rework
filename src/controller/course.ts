@@ -208,7 +208,7 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     if (startTimeMilitary  == null || endTimeMilitary == null) { return [-1, -1]; }
 
     let startDateIso = DateTime.fromMillis(course.startDateAndStartTime, { zone: 'America/New_York' }).toISO()
-    let endDateIso = DateTime.fromMillis(course.startDateAndStartTime, { zone: 'America/New_York' }).toISO()
+    let endDateIso = DateTime.fromMillis(course.endDateAndEndTime, { zone: 'America/New_York' }).toISO()
 
 
     // add time to start date in luxon
