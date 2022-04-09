@@ -11,4 +11,4 @@ RUN npm i
 COPY . .
 EXPOSE 6060
 
-CMD ['npm', 'run', 'production']
+CMD ["npm", "run", "production"]
