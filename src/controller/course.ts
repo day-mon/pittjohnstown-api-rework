@@ -2,12 +2,8 @@ import {NextFunction, Request, Response} from "express";
 import axios, {AxiosResponse} from "axios";
 import {CourseModel} from "../objects/models/CourseModel";
 import {JSDOM} from 'jsdom'
-import dayjs from 'dayjs';
-import dayjsUTC from 'dayjs/plugin/utc';
-import dayjsTZ from 'dayjs/plugin/timezone';
+import {DateTime} from "luxon";
 
-dayjs.extend(dayjsUTC);
-dayjs.extend(dayjsTZ);
 
 
 const baseUrl = "https://psmobile.pitt.edu/app/catalog/classsection/UPITT/";
@@ -211,47 +207,35 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     // time is probably tba or something of the sort
     if (startTimeMilitary  == null || endTimeMilitary == null) { return [-1, -1]; }
 
+    let startDateIso = DateTime.fromMillis(course.startDateAndStartTime, { zone: 'America/New_York' }).toISO()
+    let endDateIso = DateTime.fromMillis(course.startDateAndStartTime, { zone: 'America/New_York' }).toISO()
 
 
-    // convert course date to america new york timezone
-    let startTimeEST = dayjs(course.startDateAndStartTime, 'YYYY-MM-DD', 'American/New_York').format('YYYY-MM-DD');
-    let endTimeEST = dayjs(course.endDateAndEndTime, 'YYYY-MM-DD', 'American/New_York').format('YYYY-MM-DD')
+    // add time to start date in luxon
+    let startTimes = startTimeMilitary.split(":");
+    let finalStartTimeInUnix = DateTime.fromISO(startDateIso)
+        .setZone('America/New_York')
+        .set({ hour: parseInt(startTimes[0]), minute: parseInt(startTimes[1]) })
+        .toMillis()
 
-
-    // append time to course date
-    let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("EST", true);
-    let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("EST", true);
-
-    if (isDayLightSavings())
-    {
-        finalStartTimeInUnix = finalStartTimeInUnix.subtract(1, 'hour');
-        finalEndTimeInUnix = finalEndTimeInUnix.subtract(1, 'hour');
-    }
-
+    let endTimes = endTimeMilitary.split(":");
+    let finalEndTimeInUnix = DateTime.fromISO(endDateIso)
+        .setZone('America/New_York')
+        .set({ hour: parseInt(endTimes[0]), minute: parseInt(endTimes[1]) })
+        .toMillis()
 
     return [finalStartTimeInUnix.valueOf(), finalEndTimeInUnix.valueOf()];
 }
 
-
-
-
-
-// check if daylight savings is in effect
-const isDayLightSavings = () => {
-    let today = new Date();
-    let jan = new Date(today.getFullYear(), 0, 1);
-    let jul = new Date(today.getFullYear(), 6, 1);
-    let stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-    return today.getTimezoneOffset() < stdTimezoneOffset;
-}
-
-
-
-
 const parseCourseDates = (times: string): number[] =>  times.split('-')
         .map(day =>  day.trim().trimStart())
-        .map(day => dayjs(day, 'MM/DD/YYYY').tz('EST', true).valueOf());
-
+        .map(date => {
+            let dateSplit = date.split("/");
+            let month = parseInt(dateSplit[0]);
+            let day = parseInt(dateSplit[1]);
+            let year = parseInt(dateSplit[2]);
+            return DateTime.local(year, month, day, {zone: 'America/New_York'}).toMillis()
+        })
 
 
 const parseDaysOfWeek = (days: string): string[] => {
