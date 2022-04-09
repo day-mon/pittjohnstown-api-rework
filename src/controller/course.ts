@@ -1,10 +1,11 @@
-import { NextFunction, Request, Response } from "express";
-import axios, { AxiosResponse } from "axios";
-import { CourseModel } from "../objects/models/CourseModel";
-import { JSDOM } from 'jsdom'
+import {NextFunction, Request, Response} from "express";
+import axios, {AxiosResponse} from "axios";
+import {CourseModel} from "../objects/models/CourseModel";
+import {JSDOM} from 'jsdom'
 import dayjs from 'dayjs';
 import dayjsUTC from 'dayjs/plugin/utc';
 import dayjsTZ from 'dayjs/plugin/timezone';
+
 dayjs.extend(dayjsUTC);
 dayjs.extend(dayjsTZ);
 
@@ -218,18 +219,38 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
 
 
     // append time to course date
-    let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
-    let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("America/New_York").valueOf()
+    let finalStartTimeInUnix = dayjs(`${startTimeEST} ${startTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("EST", true);
+    let finalEndTimeInUnix = dayjs(`${endTimeEST} ${endTimeMilitary}`, "YYYY-MM-DD HH:mm").tz("EST", true);
+
+    if (isDayLightSavings())
+    {
+        finalStartTimeInUnix = finalStartTimeInUnix.subtract(1, 'hour');
+        finalEndTimeInUnix = finalEndTimeInUnix.subtract(1, 'hour');
+    }
 
 
-    return [finalStartTimeInUnix, finalEndTimeInUnix];
+    return [finalStartTimeInUnix.unix(), finalEndTimeInUnix.unix()];
 }
+
+
+
+
+
+// check if daylight savings is in effect
+const isDayLightSavings = () => {
+    let today = new Date();
+    let jan = new Date(today.getFullYear(), 0, 1);
+    let jul = new Date(today.getFullYear(), 6, 1);
+    let stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+    return today.getTimezoneOffset() < stdTimezoneOffset;
+}
+
 
 
 
 const parseCourseDates = (times: string): number[] =>  times.split('-')
         .map(day =>  day.trim().trimStart())
-        .map(day => dayjs(day, 'MM/DD/YYYY').tz('America/New_York').valueOf());
+        .map(day => dayjs(day, 'MM/DD/YYYY').tz('EST', true).valueOf());
 
 
 
