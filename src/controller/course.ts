@@ -229,7 +229,7 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     }
 
 
-    return [finalStartTimeInUnix.unix(), finalEndTimeInUnix.unix()];
+    return [finalStartTimeInUnix.valueOf(), finalEndTimeInUnix.valueOf()];
 }
 
 
