@@ -18,6 +18,8 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
     let result: AxiosResponse = await axios.get(`${baseUrl}${termId}/${courseId}`);
     let status = result.status
 
+    if (result.request.path == "/Maintenance.html")  return res.status(503).send("Peoplesoft is going through maintenance")
+
     // if it's a redirect, return peoplesoft is down
     // 409 is a conflict
     if (status >= 300 && status <= 399) return res.status(409).send("Peoplesoft is down");
@@ -28,8 +30,7 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
         termId: termId,
         courseId: courseId
     });
-    // TODO: need to figure out what status code to use here
-    if (status >= 500 && status <= 599) return res.status(409).send("PeopleSoft has returned a Internal Server Error");
+    if (status >= 500 && status <= 599) return res.status(503).send("PeopleSoft has returned a Internal Server Error");
     let peopleSoftHtml: string = result.data
     let course: CourseModel | null = getCourseFromHtml(peopleSoftHtml)
     if (null == course) return res.status(404).send({
@@ -50,7 +51,6 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
     const document = new JSDOM(html).window.document;
 
     if (document.getElementsByClassName('alert alert-info fade in').length > 0) return null;
-
 
     let identifierClassName = document.getElementsByClassName("page-title  with-back-btn")
     course.identifier = identifierClassName.length == 0 ? "" : identifierClassName[0].innerHTML.trim();
