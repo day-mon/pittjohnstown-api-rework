@@ -7,6 +7,15 @@ import {DateTime} from "luxon";
 
 
 const baseUrl = "https://psmobile.pitt.edu/app/catalog/classsection/UPITT/";
+const map: Map<string, string> = new Map([
+    ["Mo", "Monday"],
+    ["Tu", "Tuesday"],
+    ["We", "Wednesday"],
+    ["Th", "Thursday"],
+    ["Thr", "Thursday"],
+    ["Fr", "Friday"],
+    ["Fri", "Friday"]
+])
 
 const getById = async (req: Request, res: Response, next: NextFunction) =>
 {
@@ -241,15 +250,7 @@ const parseCourseDates = (times: string): number[] =>  times.split('-')
 const parseDaysOfWeek = (days: string): string[] => {
     if (days == null || days == "") return [];
     if (days.includes("TBA")) return [];
-    const map: Map<string, string> = new Map([
-        ["Mo", "Monday"],
-        ["Tu", "Tuesday"],
-        ["We", "Wednesday"],
-        ["Th", "Thursday"],
-        ["Thr", "Thursday"],
-        ["Fr", "Friday"],
-        ["Fri", "Friday"]
-    ])
+
     // Could probably use a regex here, but I'm not sure if it's worth it.
     const split = days.split(' ');
 
