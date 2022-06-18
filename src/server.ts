@@ -2,10 +2,22 @@
 import http from 'http';
 import express, { Express } from 'express';
 import morgan from 'morgan';
+import compression from 'compression'
 import laundryRoute from './routes/laundry';
 import courseRoute from './routes/course';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
+
 const router: Express = express();
 
+const compressionFilter = (req: express.Request<ParamsDictionary, any, any, ParsedQs>, res: express.Response) => {
+    if (req.header("x-no-compression"))
+        return false
+
+    return compression.filter(req, res)
+}
+/** compression for a bit of performance optimization **/
+router.use(compression({ filter: compressionFilter }))
 /** Logging */
 router.use(morgan('dev'));
 /** Parse the request */

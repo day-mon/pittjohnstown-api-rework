@@ -41,7 +41,7 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
     });
     if (status >= 500 && status <= 599) return res.status(503).send("PeopleSoft has returned a Internal Server Error");
     let peopleSoftHtml: string = result.data
-    let course: CourseModel | null = getCourseFromHtml(peopleSoftHtml)
+    let course: CourseModel | null = await getCourseFromHtml(peopleSoftHtml)
     if (null == course) return res.status(404).send({
         message: "Course not found",
         courseId: courseId,
@@ -55,7 +55,7 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
 
 
 
-const getCourseFromHtml = (html: string): CourseModel | null=> {
+const getCourseFromHtml = async (html: string): Promise<CourseModel | null> => {
     let course = new CourseModel();
     const document = new JSDOM(html).window.document;
 
@@ -100,7 +100,7 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
                 course.career = textRight;
                 break;
             case "Dates":
-                let dates = parseCourseDates(textRight);
+                let dates = await parseCourseDates(textRight);
                 course.startDateAndStartTime = dates[0];
                 course.endDateAndEndTime = dates[1];
                 break;
@@ -126,8 +126,8 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
                 course.location = textRight;
                 break;
             case "Meets":
-                course.meetingDays = parseDaysOfWeek(textRight);
-                let times = parseCourseTimes(textRight, course);
+                course.meetingDays = await parseDaysOfWeek(textRight);
+                let times = await parseCourseTimes(textRight, course);
                 course.startDateAndStartTime = times[0];
                 course.endDateAndEndTime = times[1];
                 break;
@@ -180,7 +180,7 @@ const getCourseFromHtml = (html: string): CourseModel | null=> {
  * @param startTime The start time of the course in the format "hh:mm am/pm"
  * @return The start time and end time of the course in the format "hh:mm 24 hour time" or null <strong> usually only if course is labeled TBA</strong>
  */
-const convertTimeToMilitary = (startTime: string) =>
+const convertTimeToMilitary = async (startTime: string) =>
 {
     if (startTime == undefined) return null;
     if (startTime.toLowerCase() == "tba") return null;
@@ -204,14 +204,14 @@ const convertTimeToMilitary = (startTime: string) =>
     else return null;
 }
 
-const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
+const parseCourseTimes = async (textRight: string, course: CourseModel): Promise<number[]> => {
     const times = textRight.split(' ');
     let startTime = times[1]
     let endTime = times[3]
 
     //get time in est and convert to military time
-    let startTimeMilitary = convertTimeToMilitary(startTime);
-    let endTimeMilitary = convertTimeToMilitary(endTime);
+    let startTimeMilitary = await convertTimeToMilitary(startTime);
+    let endTimeMilitary = await convertTimeToMilitary(endTime);
 
     // time is probably tba or something of the sort
     if (startTimeMilitary  == null || endTimeMilitary == null) { return [-1, -1]; }
@@ -236,7 +236,7 @@ const parseCourseTimes = (textRight: string, course: CourseModel): number[] => {
     return [finalStartTimeInUnix.valueOf(), finalEndTimeInUnix.valueOf()];
 }
 
-const parseCourseDates = (times: string): number[] =>  times.split('-')
+const parseCourseDates = async (times: string): Promise<number[]> =>  times.split('-')
         .map(day =>  day.trim().trimStart())
         .map(date => {
             let dateSplit = date.split("/");
@@ -247,7 +247,7 @@ const parseCourseDates = (times: string): number[] =>  times.split('-')
         })
 
 
-const parseDaysOfWeek = (days: string): string[] => {
+const parseDaysOfWeek = async (days: string): Promise<string[]> => {
     if (days == null || days == "") return [];
     if (days.includes("TBA")) return [];
 
