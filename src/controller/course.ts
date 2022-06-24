@@ -3,7 +3,7 @@ import axios, {AxiosResponse} from "axios";
 import {CourseModel} from "../objects/models/CourseModel";
 import {JSDOM} from 'jsdom'
 import {DateTime} from "luxon";
-
+import { client } from '../constants'
 
 
 const baseUrl = "https://psmobile.pitt.edu/app/catalog/classsection/UPITT/";
@@ -23,8 +23,7 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
     let termId = req.params.termId;
 
     if (!validTerm(termId)) return res.status(422).send(`${termId} is not a valid term. Please try a valid one`);
-
-    let result: AxiosResponse = await axios.get(`${baseUrl}${termId}/${courseId}`);
+    let result: AxiosResponse = await client.get(`${baseUrl}${termId}/${courseId}`);
     let status = result.status
 
     if (result.request.path == "/Maintenance.html")  return res.status(503).send("Peoplesoft is going through maintenance")
@@ -48,7 +47,6 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
         termId: termId
     });
     course.courseUrl = result.config.url == undefined ? "Unknown" : result.config.url
-
     return res.status(200).send(course);
 
 }
@@ -56,6 +54,7 @@ const getById = async (req: Request, res: Response, next: NextFunction) =>
 
 
 const getCourseFromHtml = async (html: string): Promise<CourseModel | null> => {
+    const start = Date.now()
     let course = new CourseModel();
     const document = new JSDOM(html).window.document;
 
@@ -169,6 +168,7 @@ const getCourseFromHtml = async (html: string): Promise<CourseModel | null> => {
                 break;
         }
     }
+    console.log(`Scraping took ${Date.now()  - start} ms`)
     return course;
 }
 

@@ -7,9 +7,9 @@ import laundryRoute from './routes/laundry';
 import courseRoute from './routes/course';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
+import cors from "cors";
 
 const router: Express = express();
-
 const compressionFilter = (req: express.Request<ParamsDictionary, any, any, ParsedQs>, res: express.Response) => {
     if (req.header("x-no-compression"))
         return false
@@ -25,28 +25,15 @@ router.use(express.urlencoded({ extended: false }));
 /** Takes care of JSON data */
 router.use(express.json());
 
-/** RULES OF OUR API */
-router.use((req, res, next) => {
-    // set the CORS policy
-    res.header('Access-Control-Allow-Origin', '*');
-    // set the CORS headers
-    res.header('Access-Control-Allow-Headers', 'origin, X-Requested-With,Content-Type,Accept, Authorization');
-    // set the CORS method headers
-    if (req.method === 'OPTIONS') {
-        res.header('Access-Control-Allow-Methods', 'GET');
-        return res.status(200).json({});
-    }
-    next();
-});
+router.use(cors())
 
 /** Routes */
 router.use('/api/v1/', courseRoute, laundryRoute);
 
 /** Error handling */
 router.use((req, res, next) => {
-    const error = new Error('not found');
     return res.status(404).json({
-        message: error.message
+        message: 'Not found'
     });
 });
 
